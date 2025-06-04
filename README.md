@@ -1,6 +1,6 @@
-# Bydit - Reddit Data Exporter
+# RedditAccess - Reddit Data Exporter
 
-Bydit is a command-line application that fetches your Reddit posts and/or comments, allows filtering by subreddit and minimum score, and exports the data in CSV format.
+RedditAccess is a command-line application that fetches your Reddit posts and/or comments, allows filtering by subreddit and minimum score, and exports the data in CSV format.
 
 ## Setup
 
@@ -9,26 +9,26 @@ Bydit is a command-line application that fetches your Reddit posts and/or commen
     *   Go to [Reddit's app preferences](https://www.reddit.com/prefs/apps).
     *   Click "are you a developer? create an app..."
     *   Fill in the details:
-        *   **name:** (e.g., `ByditApp`)
+        *   **name:** (e.g., `RedditAccessApp`)
         *   **type:** select `script`
         *   **description:** (e.g., `App to export my Reddit data`)
         *   **about url:** (can be blank or your profile URL)
-        *   **redirect uri:** (e.g., `http://localhost:8080` - this won't be actively used by Bydit but is required by Reddit)
+        *   **redirect uri:** (e.g., `http://localhost:8080` - this won't be actively used by RedditAccess but is required by Reddit)
     *   Click "create app".
     *   Note down the **client ID** (shown under your app's name) and the **client secret**.
-3.  **Configure Bydit:**
-    *   In the root directory of the Bydit project, create a file named `config.toml`.
+3.  **Configure RedditAccess:**
+    *   In the root directory of the RedditAccess project, create a file named `config.toml`.
     *   Add your Reddit API credentials and login information to `config.toml`:
 
         ```toml
-        user_agent = "YOUR_CUSTOM_USER_AGENT_STRING"  # e.g., ByditApp/0.1 by YourUsername
+        user_agent = "YOUR_CUSTOM_USER_AGENT_STRING"  # e.g., RedditAccessApp/0.1 by YourUsername
         client_id = "YOUR_REDDIT_APP_CLIENT_ID"      # Found in your Reddit app settings
         client_secret = "YOUR_REDDIT_APP_CLIENT_SECRET"# Found in your Reddit app settings
         username = "YOUR_REDDIT_USERNAME"
         password = "YOUR_REDDIT_PASSWORD"
         ```
 
-        **Important:** Replace the placeholder values with your actual credentials. The `user_agent` should be a unique string that describes your script, including your username if possible (e.g., `Bydit/1.0 by u/YourUsername`).
+        **Important:** Replace the placeholder values with your actual credentials. The `user_agent` should be a unique string that describes your script, including your username if possible (e.g., `RedditAccess/1.0 by u/YourUsername`).
 
 ## Building and Running
 
@@ -43,21 +43,21 @@ Bydit is a command-line application that fetches your Reddit posts and/or commen
     ```
     Or, after building, run the executable directly:
     ```bash
-    ./target/debug/bydit [OPTIONS]
+    ./target/debug/reddit-access [OPTIONS]
     ```
     For a release build (optimized):
     ```bash
     cargo build --release
-    ./target/release/bydit [OPTIONS]
+    ./target/release/reddit-access [OPTIONS]
     ```
 
 ## Command-Line Options
 
-Bydit accepts the following command-line options:
+RedditAccess accepts the following command-line options:
 
 *   `-s, --subreddit <SUBREDDIT>`: Optional. Filter results by a specific subreddit name (e.g., `rust`). If not provided, items from all subreddits will be fetched.
 *   `-m, --min_score <MIN_SCORE>`: Optional. Filter results to include only items with at least this many upvotes. If not provided, all items are included regardless of score.
-*   `-t, --type <TYPE>`: Optional. Specify the type of items to fetch. Valid values are:
+*   `-t, --item-type <ITEM_TYPE>`: Optional. Specify the type of items to fetch. Valid values are:
     *   `posts`: Fetch only submitted posts.
     *   `comments`: Fetch only comments.
     *   `both`: Fetch both posts and comments.
@@ -65,6 +65,9 @@ Bydit accepts the following command-line options:
 *   `--debug`: Optional. Enable verbose debug logging to the console.
 *   `-h, --help`: Display help information.
 *   `-V, --version`: Display version information.
+*   `--overwrite <TEXT>`: Optional. If provided, the content of filtered posts or comments will be replaced with the specified text. This happens *before* deletion if `--delete` is also used.
+*   `-y, --yes`: Optional. If provided with `--delete`, skips the confirmation prompt before deleting items.
+*   `--delete`: Optional. Delete the fetched items from Reddit after processing.
 
 ## Output Format
 
@@ -85,15 +88,22 @@ The application outputs data in CSV format to standard output. The CSV header is
 
 *   Fetch all posts and comments from the `rust` subreddit with a minimum score of 10:
     ```bash
-    ./target/debug/bydit -s rust -m 10
+    ./target/debug/reddit-access -s rust -m 10
     ```
 *   Fetch only your comments from all subreddits:
     ```bash
-    ./target/debug/bydit --type comments
+    ./target/debug/reddit-access --item-type comments
     ```
 *   Fetch all your posts and comments and save to a file:
     ```bash
-    ./target/debug/bydit > my_reddit_data.csv
+    ./target/debug/reddit-access > my_reddit_data.csv
+    ```
+*   Fetch posts from `r/test` and overwrite their content, then delete them:
+    ```bash
+    ./target/debug/reddit-access -s test --item-type posts --overwrite "This content has been updated." --delete
+*   Fetch all your comments and delete them without prompting for confirmation:
+    ```bash
+    ./target/debug/reddit-access --item-type comments --delete -y
     ```
 
 ## License
