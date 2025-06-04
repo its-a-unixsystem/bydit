@@ -5,6 +5,7 @@ use std::fs;
 
 #[derive(Deserialize)]
 struct Config {
+
     user_agent: String,
     client_id: String,
     client_secret: String,
@@ -26,6 +27,26 @@ struct Cli {
     debug: bool,
 }
 
+#[derive(Debug)]
+struct UnifiedItem {
+    item_type: String, // "Post" or "Comment"
+    subreddit: String,
+    title: String,       // Post title or link title for comment
+    content: String,     // Post selftext or comment body
+    upvotes: i32,
+    num_comments: i32, // For posts; 0 for comments
+    permalink: String,
+    created_utc: f64,  // Timestamp for sorting
+}
+
+fn escape_csv_field(field: &str) -> String {
+    field
+        .replace("\r\n", "\\n")
+        .replace("\n", "\\n")
+        .replace("\r", "\\n")
+        .replace("\"", "\"\"")
+}
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
@@ -36,7 +57,7 @@ async fn main() {
     let config: Config =
         toml::from_str(&config_str).expect("Failed to parse config.toml. Check its format.");
 
-    println!("Logging in to Reddit...");
+    if cli.debug { println!("Logging in to Reddit..."); }
 
     // Create a new Reddit client
     let reddit = match Reddit::new(
@@ -50,21 +71,23 @@ async fn main() {
     .await
     {
         Ok(client) => {
-            println!("Successfully logged in to Reddit.");
+            if cli.debug { println!("Successfully logged in to Reddit."); }
             client
         }
         Err(e) => {
-            eprintln!("Failed to log in to Reddit: {}", e);
+            if cli.debug { eprintln!("Failed to log in to Reddit: {}", e); }
             return;
         }
     };
 
     // Get the authenticated user's information
     if let Err(e) = reddit.me().await {
-        eprintln!("\nFailed to fetch your user data: {}", e);
+        if cli.debug { eprintln!("\nFailed to fetch your user data: {}", e); }
         return;
     }
-    println!("Successfully retrieved account information!");
+    if cli.debug { println!("Successfully retrieved account information!"); }
+
+    let mut all_items: Vec<UnifiedItem> = Vec::new();
 
     if cli.debug {
         println!("\nFetching your submitted posts...");
@@ -91,29 +114,28 @@ async fn main() {
                 })
                 .collect();
 
-            if filtered_posts.is_empty() {
-                println!("No submitted posts match your criteria.");
-            } else {
-                println!(
-                    "\nSuccessfully fetched {} of your submitted posts matching criteria:",
-                    filtered_posts.len()
-                );
-                println!("----------------------------------------");
-                for (i, post) in filtered_posts.iter().enumerate() {
-                    let title = &post.data.title;
-                    let subreddit_name = &post.data.subreddit;
-
-                    println!("{}. {}", i + 1, title);
-                    println!("   Subreddit: r/{}", subreddit_name);
-                    println!(
-                        "   Upvotes: {}, Comments: {}\n",
-                        post.data.ups, post.data.num_comments
-                    );
-                }
+            let num_filtered_posts = filtered_posts.len();
+            for post_data in filtered_posts.into_iter() {
+                let item = UnifiedItem {
+                    item_type: "Post".to_string(),
+                    subreddit: post_data.data.subreddit,
+                    title: post_data.data.title,
+                    content: post_data.data.selftext,
+                    upvotes: post_data.data.ups as i32,
+                    num_comments: post_data.data.num_comments as i32,
+                    permalink: post_data.data.permalink,
+                    created_utc: post_data.data.created_utc,
+                };
+                all_items.push(item);
+            }
+             if cli.debug {
+                println!("Collected {} posts.", num_filtered_posts);
             }
         }
         Err(e) => {
-            eprintln!("\nFailed to fetch your submitted posts: {}", e);
+            if cli.debug {
+                eprintln!("\nFailed to fetch your submitted posts: {}", e);
+            }
         }
     }
     } // Closes 'if fetch_posts'
@@ -163,7 +185,9 @@ async fn main() {
                     }
                 }
                 Err(e) => {
-                    eprintln!("\nError fetching page {} of comments: {}", page_count, e);
+                    if cli.debug {
+                        eprintln!("\nError fetching page {} of comments: {}", page_count, e);
+                    }
                     break; 
                 }
             }
@@ -174,7 +198,9 @@ async fn main() {
         }
 
         if all_fetched_comments.is_empty() { 
-             println!("No comments found for this user after attempting to fetch all pages.");
+            if cli.debug {
+                 println!("No comments found for this user after attempting to fetch all pages.");
+            }
         } else {
             let filtered_comments: Vec<_> = all_fetched_comments
                 .into_iter() 
@@ -192,31 +218,55 @@ async fn main() {
                 })
                 .collect();
 
-            if filtered_comments.is_empty() {
-                println!("No comments match your criteria after filtering.");
-            } else {
-                println!(
-                    "\nSuccessfully fetched and filtered {} comments matching criteria:",
-                    filtered_comments.len()
-                );
-                println!("----------------------------------------");
-                for (i, comment) in filtered_comments.iter().enumerate() {
-                    let link_title = comment.data.link_title.as_ref().map_or("[N/A]", |s| s.as_str());
-                    let subreddit_name = comment.data.subreddit.as_ref().map_or("[N/A]", |s| s.as_str());
-                    let body = comment.data.body.as_ref().map_or("[No Body]", |s| s.as_str());
-
-                    println!(
-                        "{}. Comment on post: '{}' in r/{}",
-                        i + 1,
-                        link_title,
-                        subreddit_name
-                    );
-                    println!("   \"{}\"", body);
-                    println!("   Upvotes: {}\n", comment.data.ups.unwrap_or(0));
-                }
+            let num_filtered_comments = filtered_comments.len();
+            for comment_data in filtered_comments.into_iter() {
+                let item = UnifiedItem {
+                    item_type: "Comment".to_string(),
+                    subreddit: comment_data.data.subreddit.unwrap_or_default(),
+                    title: comment_data.data.link_title.unwrap_or_default(),
+                    content: comment_data.data.body.unwrap_or_default(),
+                    upvotes: comment_data.data.ups.unwrap_or(0),
+                    num_comments: 0, // Comments don't have a direct num_comments field like posts
+                    permalink: comment_data.data.permalink.unwrap_or_default(),
+                    created_utc: comment_data.data.created_utc.unwrap_or(0.0),
+                };
+                all_items.push(item);
+            }
+            if cli.debug {
+                println!("Collected {} comments.", num_filtered_comments);
             }
         }
     } // Closes 'if fetch_comments'
 
-    println!("\nFinished fetching your data.");
+    // Sort all items by creation date (newest first)
+    all_items.sort_by(|a, b| b.created_utc.partial_cmp(&a.created_utc).unwrap_or(std::cmp::Ordering::Equal));
+
+    // Print unified CSV header
+    if !all_items.is_empty() {
+        println!("Type,Subreddit,Title,Content,Upvotes,NumComments,Permalink,TimestampUTC");
+        for item in all_items.iter() {
+            let escaped_title = escape_csv_field(&item.title);
+            let escaped_content = escape_csv_field(&item.content);
+            let subreddit_prefix = if item.subreddit.is_empty() { "" } else { "r/" };
+
+            println!(
+                "\"{}\",\"{}{}\",\"{}\",\"{}\",{},{},\"https://reddit.com{}\",{}",
+                item.item_type,
+                subreddit_prefix,
+                item.subreddit,
+                escaped_title,
+                escaped_content,
+                item.upvotes,
+                item.num_comments,
+                item.permalink,
+                item.created_utc
+            );
+        }
+    } else {
+        if cli.debug {
+            println!("No items to output after filtering.");
+        }
+    }
+
+    if cli.debug { println!("\nFinished processing and printing data."); }
 }
