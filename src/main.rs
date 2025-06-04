@@ -5,10 +5,11 @@ use std::fs;
 
 #[derive(Deserialize)]
 struct Config {
-
     user_agent: String,
     client_id: String,
     client_secret: String,
+    username: String,
+    password: String,
 }
 
 #[derive(Parser, Debug)]
@@ -65,8 +66,8 @@ async fn main() {
         &config.client_id,
         &config.client_secret,
     )
-    .username("USERNAME") // Consider making username/password configurable or CLI args
-    .password("PASSWORD") // Store credentials securely
+    .username(&config.username)
+    .password(&config.password)
     .login()
     .await
     {
@@ -92,7 +93,7 @@ async fn main() {
     if cli.debug {
         println!("\nFetching your submitted posts...");
     }
-    let user = roux::user::User::new("USERNAME"); // Consider making username configurable
+    let user = roux::user::User::new(&config.username);
 
     let fetch_posts = cli.item_type.as_ref().map_or(true, |t| t.eq_ignore_ascii_case("posts") || t.eq_ignore_ascii_case("both"));
     let fetch_comments = cli.item_type.as_ref().map_or(true, |t| t.eq_ignore_ascii_case("comments") || t.eq_ignore_ascii_case("both"));
