@@ -8,3 +8,4 @@ roux = "2.2"
 tokio = { version = "1.43", features = ["macros", "rt-multi-thread"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
+clap = { version = "4.5.4", features = ["derive"] }
