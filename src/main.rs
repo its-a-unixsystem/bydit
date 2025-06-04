@@ -2,6 +2,7 @@ use clap::Parser;
 use roux::Reddit;
 use serde::Deserialize;
 use std::fs;
+use std::io::{self, Write};
 
 #[derive(Deserialize)]
 struct Config {
@@ -26,10 +27,14 @@ struct Cli {
 
     #[clap(long)]
     debug: bool,
+
+    #[clap(short, long, action)]
+    delete: bool,
 }
 
 #[derive(Debug)]
 struct UnifiedItem {
+    id: String, // Full Reddit ID, e.g., t3_xxxxxx or t1_xxxxxx
     item_type: String, // "Post" or "Comment"
     subreddit: String,
     title: String,       // Post title or link title for comment
@@ -118,6 +123,7 @@ async fn main() {
             let num_filtered_posts = filtered_posts.len();
             for post_data in filtered_posts.into_iter() {
                 let item = UnifiedItem {
+                    id: post_data.data.name.clone(),
                     item_type: "Post".to_string(),
                     subreddit: post_data.data.subreddit,
                     title: post_data.data.title,
@@ -222,6 +228,7 @@ async fn main() {
             let num_filtered_comments = filtered_comments.len();
             for comment_data in filtered_comments.into_iter() {
                 let item = UnifiedItem {
+                    id: comment_data.data.name.clone().unwrap_or_default(),
                     item_type: "Comment".to_string(),
                     subreddit: comment_data.data.subreddit.unwrap_or_default(),
                     title: comment_data.data.link_title.unwrap_or_default(),
@@ -242,8 +249,101 @@ async fn main() {
     // Sort all items by creation date (newest first)
     all_items.sort_by(|a, b| b.created_utc.partial_cmp(&a.created_utc).unwrap_or(std::cmp::Ordering::Equal));
 
-    // Print unified CSV header
-    if !all_items.is_empty() {
+    if cli.delete {
+        if all_items.is_empty() {
+            if cli.debug {
+                println!("No items found to delete based on current filters.");
+            }
+        } else {
+            println!("\nStarting deletion process...");
+            let mut deleted_count = 0;
+            let mut skipped_count = 0;
+            let total_items_to_process = all_items.len();
+
+            for (index, item) in all_items.iter().enumerate() {
+                println!(
+                    "\nItem {}/{} to delete:",
+                    index + 1,
+                    total_items_to_process
+                );
+                println!("  Type: {}", item.item_type);
+                println!("  Subreddit: r/{}", item.subreddit);
+                let display_title = if item.item_type == "Comment" {
+                    format!("Comment in post \"{}\"", item.title)
+                } else {
+                    item.title.clone()
+                };
+                println!("  Title: {}", display_title);
+                println!("  Upvotes: {}", item.upvotes);
+
+                loop {
+                    print!("Are you sure you want to delete this item? (y/n/a - yes/no/abort): ");
+                    io::stdout().flush().unwrap();
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).expect("Failed to read line");
+                    match input.trim().to_lowercase().as_str() {
+                        "y" => {
+                            if cli.debug {
+                                println!("Attempting to delete item with ID: {}", item.id);
+                            }
+                            let delete_url = "https://oauth.reddit.com/api/del";
+                            let params = [("id", item.id.as_str())];
+                            match reddit.client.post(delete_url).form(&params).send().await {
+                                Ok(response) => {
+                                    if response.status().is_success() {
+                                        // Consume response body to be a good netizen and allow connection reuse.
+                                        let _ = response.text().await; 
+                                        println!("Successfully deleted item: {}", item.id);
+                                        deleted_count += 1;
+                                    } else {
+                                        let status = response.status();
+                                        let error_body = response.text().await.unwrap_or_else(|e| format!("Could not read error response body: {}", e));
+                                        eprintln!(
+                                            "Failed to delete item {} - API Error Status: {}. Details: {}",
+                                            item.id,
+                                            status,
+                                            error_body
+                                        );
+                                    }
+                                }
+                                Err(e) => { // This is a reqwest::Error (network, DNS, timeout, builder error, etc.)
+                                    eprintln!("Error sending delete request for item {}: {}", item.id, e);
+                                    if cli.debug {
+                                        eprintln!("Debug details for reqwest error: {:?}", e);
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                        "n" => {
+                            println!("Skipped item: {}", item.id);
+                            skipped_count += 1;
+                            break;
+                        }
+                        "a" => {
+                            println!("Aborting deletion process.");
+                            println!("\nDeletion Statistics (aborted):");
+                            println!("  Total items processed before abort: {}", index);
+                            println!("  Items deleted: {}", deleted_count);
+                            println!("  Items skipped: {}", skipped_count);
+                            if cli.debug { println!("\nApplication finished."); }
+                            return;
+                        }
+                        _ => {
+                            println!("Invalid input. Please enter 'y', 'n', or 'a'.");
+                        }
+                    }
+                }
+            }
+
+            println!("\nDeletion Statistics:");
+            println!("  Total items considered: {}", total_items_to_process);
+            println!("  Items deleted: {}", deleted_count);
+            println!("  Items skipped: {}", skipped_count);
+        }
+    } else {
+        // Print unified CSV header
+        if !all_items.is_empty() {
         println!("Type,Subreddit,Title,Content,Upvotes,NumComments,Permalink,TimestampUTC");
         for item in all_items.iter() {
             let escaped_title = escape_csv_field(&item.title);
@@ -268,6 +368,8 @@ async fn main() {
             println!("No items to output after filtering.");
         }
     }
+        if cli.debug { println!("\nFinished processing and printing data."); }
+    }
 
-    if cli.debug { println!("\nFinished processing and printing data."); }
+    if cli.debug { println!("\nApplication finished."); }
 }
