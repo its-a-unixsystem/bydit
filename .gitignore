@@ -1,3 +1,7 @@
 /target
+/docs
 Cargo.lock
 config.toml
+.cursor
+.windsurf
+.vscode
