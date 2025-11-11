@@ -61,6 +61,7 @@ RedditAccess accepts the following command-line options:
 *   `-M, --max-score <MAX_SCORE>`: Optional. Filter results to exclude items with scores at or above this threshold (i.e., keep only items with scores below this value). Can be negative. If not provided, no upper score limit is applied.
 *   `--min-age <AGE>`: Optional. Filter results to include only items older than the specified age. Accepts human-readable durations (e.g., `1 week`, `2 years`, `30 days`) or specific dates (e.g., `2024-01-15`, `2024-01-15T10:30:00`). If not provided, no minimum age limit is applied.
 *   `--max-age <AGE>`: Optional. Filter results to include only items newer than the specified age. Accepts human-readable durations (e.g., `1 week`, `2 years`, `30 days`) or specific dates (e.g., `2024-01-15`, `2024-01-15T10:30:00`). If not provided, no maximum age limit is applied.
+*   `-p, --post-title <TITLE>`: Optional. Filter comments by the title of the post they belong to (case-insensitive substring match). Useful for finding comments on posts with specific titles like `[deleted by user]`. Only applies to comments.
 *   `-t, --item-type <ITEM_TYPE>`: Optional. Specify the type of items to fetch. Valid values are:
     *   `posts`: Fetch only submitted posts.
     *   `comments`: Fetch only comments.
@@ -90,61 +91,99 @@ The application outputs data in CSV format to standard output. The CSV header is
 
 ## Example Usage
 
-*   Fetch all posts and comments from the `rust` subreddit with a minimum score of 10:
-    ```bash
-    ./target/debug/reddit-access -s rust -m 10
-    ```
-*   Fetch posts and comments from multiple subreddits:
-    ```bash
-    ./target/debug/reddit-access -s rust,programming,coding
-    ```
-*   Exclude posts and comments from specific subreddits:
-    ```bash
-    ./target/debug/reddit-access -x spam,test,offtopic
-    ```
-*   Combine include and exclude filters (fetch from rust and programming, but exclude rust_gaming):
-    ```bash
-    ./target/debug/reddit-access -s rust,programming -x rust_gaming
-    ```
-*   Fetch posts and comments with scores between 5 and 100 (inclusive of 5, exclusive of 100):
-    ```bash
-    ./target/debug/reddit-access -m 5 -M 100
-    ```
-*   Fetch only your comments from all subreddits:
-    ```bash
-    ./target/debug/reddit-access --item-type comments
-    ```
-*   Fetch all your posts and comments and save to a file:
-    ```bash
-    ./target/debug/reddit-access > my_reddit_data.csv
-    ```
-*   Fetch posts from `r/test` and overwrite their content, then delete them:
-    ```bash
-    ./target/debug/reddit-access -s test --item-type posts --overwrite "This content has been updated." --delete
-*   Fetch all your comments and delete them without prompting for confirmation:
-    ```bash
-    ./target/debug/reddit-access --item-type comments --delete -y
-    ```
-*   Fetch posts older than 1 year:
-    ```bash
-    ./target/debug/reddit-access --item-type posts --min-age "1 year"
-    ```
-*   Fetch comments from the last 30 days:
-    ```bash
-    ./target/debug/reddit-access --item-type comments --max-age "30 days"
-    ```
-*   Fetch posts between 6 months and 1 year old:
-    ```bash
-    ./target/debug/reddit-access --item-type posts --min-age "1 year" --max-age "6 months"
-    ```
-*   Fetch posts created after a specific date:
-    ```bash
-    ./target/debug/reddit-access --item-type posts --max-age "2024-01-15"
-    ```
-*   Fetch posts created before a specific date:
-    ```bash
-    ./target/debug/reddit-access --item-type posts --min-age "2024-06-01"
-    ```
+### Filtering by Subreddit
+
+Fetch all posts and comments from the `rust` subreddit with a minimum score of 10:
+```bash
+reddit-access -s rust -m 10
+```
+
+Fetch posts and comments from multiple subreddits:
+```bash
+reddit-access -s rust,programming,coding
+```
+
+Exclude posts and comments from specific subreddits:
+```bash
+reddit-access -x spam,test,offtopic
+```
+
+Combine include and exclude filters (fetch from rust and programming, but exclude rust_gaming):
+```bash
+reddit-access -s rust,programming -x rust_gaming
+```
+
+### Filtering by Score
+
+Fetch posts and comments with scores between 5 and 100 (inclusive of 5, exclusive of 100):
+```bash
+reddit-access -m 5 -M 100
+```
+
+### Filtering by Item Type
+
+Fetch only your comments from all subreddits:
+```bash
+reddit-access --item-type comments
+```
+
+### Filtering by Age
+
+Fetch posts older than 1 year:
+```bash
+reddit-access --item-type posts --min-age "1 year"
+```
+
+Fetch comments from the last 30 days:
+```bash
+reddit-access --item-type comments --max-age "30 days"
+```
+
+Fetch posts between 6 months and 1 year old:
+```bash
+reddit-access --item-type posts --min-age "1 year" --max-age "6 months"
+```
+
+Fetch posts created after a specific date:
+```bash
+reddit-access --item-type posts --max-age "2024-01-15"
+```
+
+Fetch posts created before a specific date:
+```bash
+reddit-access --item-type posts --min-age "2024-06-01"
+```
+
+### Filtering by Post Title
+
+Fetch comments on posts with "[deleted by user]" in the title:
+```bash
+reddit-access --item-type comments --post-title "[deleted by user]"
+```
+
+### Exporting Data
+
+Fetch all your posts and comments and save to a file:
+```bash
+reddit-access > my_reddit_data.csv
+```
+
+### Modifying and Deleting Content
+
+Fetch posts from `r/test` and overwrite their content, then delete them:
+```bash
+reddit-access -s test --item-type posts --overwrite "This content has been updated." --delete
+```
+
+Fetch all your comments and delete them without prompting for confirmation:
+```bash
+reddit-access --item-type comments --delete -y
+```
+
+Fetch and delete comments on deleted posts:
+```bash
+reddit-access --item-type comments -p "[deleted by user]" --delete
+```
 
 ## License
 
