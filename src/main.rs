@@ -17,6 +17,7 @@ use cli::Cli;
 
 mod models;
 mod utils;
+use utils::parse_age_to_timestamp;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -64,16 +65,53 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // Create user object for fetching
-    let user = roux::user::User::new(authenticated_username);
+    // Parse age filters
+    let min_age_timestamp = if let Some(ref min_age_str) = cli.min_age {
+        match parse_age_to_timestamp(min_age_str) {
+            Ok(ts) => {
+                if cli.debug {
+                    println!("Parsed --min-age '{}' to timestamp: {}", min_age_str, ts);
+                }
+                Some(ts)
+            }
+            Err(e) => {
+                eprintln!("Error parsing --min-age: {}", e);
+                return Err(e);
+            }
+        }
+    } else {
+        None
+    };
+
+    let max_age_timestamp = if let Some(ref max_age_str) = cli.max_age {
+        match parse_age_to_timestamp(max_age_str) {
+            Ok(ts) => {
+                if cli.debug {
+                    println!("Parsed --max-age '{}' to timestamp: {}", max_age_str, ts);
+                }
+                Some(ts)
+            }
+            Err(e) => {
+                eprintln!("Error parsing --max-age: {}", e);
+                return Err(e);
+            }
+        }
+    } else {
+        None
+    };
 
     // Fetch items
     let mut all_items = fetch_user_items(
-        &user,
+        &reddit,
+        authenticated_username,
         fetch_posts,
         fetch_comments,
         cli.subreddit.as_ref(),
+        cli.exclude_subreddit.as_ref(),
         cli.score,
+        cli.max_score,
+        min_age_timestamp,
+        max_age_timestamp,
         cli.debug,
     )
     .await?;

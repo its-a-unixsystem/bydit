@@ -1,7 +1,7 @@
 use roux::Reddit;
 use roux::Me;
-use roux::user::User;
 use roux::util::FeedOption;
+use roux::{Submissions, Comments};
 use std::error::Error;
 use crate::config::Config; 
 use crate::models::UnifiedItem;
@@ -26,30 +26,84 @@ pub async fn connect_reddit(config: &Config, debug_mode: bool) -> Result<Me, Box
 }
 
 pub async fn fetch_user_items(
-    user: &User,
+    reddit: &Me,
+    username: &str,
     do_fetch_posts: bool,
     do_fetch_comments: bool,
     filter_subreddit: Option<&String>,
+    exclude_subreddit: Option<&String>,
     filter_score: Option<i32>,
+    filter_max_score: Option<i32>,
+    min_age_timestamp: Option<f64>,
+    max_age_timestamp: Option<f64>,
     debug_mode: bool,
 ) -> Result<Vec<UnifiedItem>, Box<dyn Error>> {
     let mut all_items: Vec<UnifiedItem> = Vec::new();
+
+    // Parse comma-separated subreddit lists
+    let include_subreddits: Option<Vec<String>> = filter_subreddit.map(|s| {
+        s.split(',')
+            .map(|sr| sr.trim().to_lowercase())
+            .filter(|sr| !sr.is_empty())
+            .collect()
+    });
+
+    let exclude_subreddits: Option<Vec<String>> = exclude_subreddit.map(|s| {
+        s.split(',')
+            .map(|sr| sr.trim().to_lowercase())
+            .filter(|sr| !sr.is_empty())
+            .collect()
+    });
 
     if do_fetch_posts {
         if debug_mode {
             println!("Fetching your posts...");
         }
-        match user.submitted(None).await {
-            Ok(submitted_feed) => {
+        // Use authenticated OAuth client to fetch user's submitted posts
+        let mut url = format!("user/{}/submitted/.json?", username);
+        let feed_options = FeedOption::new().limit(100);
+        feed_options.build_url(&mut url);
+        let oauth_url = roux::util::url::build_oauth(&url);
+
+        if debug_mode { println!("GET {}", oauth_url); }
+        let submitted_feed_res = reddit.client.get(&oauth_url).send().await;
+        match submitted_feed_res {
+            Ok(response) => {
+                if debug_mode { println!("Status: {}", response.status()); }
+                let submitted_feed: Submissions = response.json().await.map_err(|e| {
+                    if debug_mode {
+                        eprintln!("Failed to parse submitted posts JSON: {}", e);
+                    }
+                    Box::new(e) as Box<dyn Error>
+                })?;
+
                 let filtered_posts: Vec<_> = submitted_feed
                     .data
                     .children
                     .into_iter()
                     .filter(|post| {
-                        let subreddit_match = filter_subreddit
-                            .map_or(true, |sr| post.data.subreddit.eq_ignore_ascii_case(sr));
+                        let post_subreddit = post.data.subreddit.to_lowercase();
+                        
+                        // Check if subreddit is in include list (if specified)
+                        let include_match = include_subreddits.as_ref().map_or(true, |list| {
+                            list.iter().any(|sr| sr == &post_subreddit)
+                        });
+                        
+                        // Check if subreddit is NOT in exclude list (if specified)
+                        let exclude_match = exclude_subreddits.as_ref().map_or(true, |list| {
+                            !list.iter().any(|sr| sr == &post_subreddit)
+                        });
+                        
                         let score_match = filter_score.map_or(true, |s| post.data.ups >= s as f64);
-                        subreddit_match && score_match
+                        let max_score_match = filter_max_score.map_or(true, |s| post.data.ups < s as f64);
+                        
+                        // Age filtering: created_utc is the timestamp when the post was created
+                        // min_age_timestamp: items must be OLDER than this (created_utc <= min_age_timestamp)
+                        // max_age_timestamp: items must be NEWER than this (created_utc >= max_age_timestamp)
+                        let min_age_match = min_age_timestamp.map_or(true, |min_ts| post.data.created_utc <= min_ts);
+                        let max_age_match = max_age_timestamp.map_or(true, |max_ts| post.data.created_utc >= max_ts);
+                        
+                        include_match && exclude_match && score_match && max_score_match && min_age_match && max_age_match
                     })
                     .collect();
 
@@ -95,13 +149,26 @@ pub async fn fetch_user_items(
                 println!("Fetching page {} of comments...", page_count);
             }
 
+            // Build OAuth URL with pagination options
+            let mut url = format!("user/{}/comments/.json?", username);
             let mut feed_options = FeedOption::new().limit(100);
             if let Some(token) = &after_token {
                 feed_options = feed_options.after(token);
             }
+            feed_options.build_url(&mut url);
+            let oauth_url = roux::util::url::build_oauth(&url);
 
-            match user.comments(Some(feed_options)).await {
-                Ok(comments_feed) => {
+            if debug_mode { println!("GET {}", oauth_url); }
+            match reddit.client.get(&oauth_url).send().await {
+                Ok(response) => {
+                    if debug_mode { println!("Status: {}", response.status()); }
+                    let comments_feed: Comments = response.json().await.map_err(|e| {
+                        if debug_mode {
+                            eprintln!("Failed to parse comments JSON on page {}: {}", page_count, e);
+                        }
+                        Box::new(e) as Box<dyn Error>
+                    })?;
+
                     let num_fetched_this_page = comments_feed.data.children.len();
                     if debug_mode {
                         println!("Fetched {} comments on page {}.", num_fetched_this_page, page_count);
@@ -144,15 +211,34 @@ pub async fn fetch_user_items(
             let filtered_comments: Vec<_> = all_fetched_comments
                 .into_iter()
                 .filter(|comment| {
-                    let subreddit_match = filter_subreddit.map_or(true, |sr| {
-                        comment
-                            .data
-                            .subreddit
-                            .as_ref()
-                            .map_or(false, |cs| cs.eq_ignore_ascii_case(sr))
+                    let comment_subreddit = comment.data.subreddit.as_ref().map(|s| s.to_lowercase());
+                    
+                    // Check if subreddit is in include list (if specified)
+                    let include_match = include_subreddits.as_ref().map_or(true, |list| {
+                        comment_subreddit.as_ref().map_or(false, |cs| {
+                            list.iter().any(|sr| sr == cs)
+                        })
                     });
+                    
+                    // Check if subreddit is NOT in exclude list (if specified)
+                    let exclude_match = exclude_subreddits.as_ref().map_or(true, |list| {
+                        comment_subreddit.as_ref().map_or(true, |cs| {
+                            !list.iter().any(|sr| sr == cs)
+                        })
+                    });
+                    
                     let score_match = filter_score.map_or(true, |s_filter| comment.data.score.map_or(false, |s_comment| s_comment >= s_filter));
-                    subreddit_match && score_match
+                    let max_score_match = filter_max_score.map_or(true, |s_filter| comment.data.score.map_or(false, |s_comment| s_comment < s_filter));
+                    
+                    // Age filtering for comments
+                    let min_age_match = min_age_timestamp.map_or(true, |min_ts| {
+                        comment.data.created_utc.map_or(false, |created| created <= min_ts)
+                    });
+                    let max_age_match = max_age_timestamp.map_or(true, |max_ts| {
+                        comment.data.created_utc.map_or(false, |created| created >= max_ts)
+                    });
+                    
+                    include_match && exclude_match && score_match && max_score_match && min_age_match && max_age_match
                 })
                 .collect();
             

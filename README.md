@@ -1,6 +1,6 @@
 # RedditAccess - Reddit Data Exporter
 
-RedditAccess is a command-line application that fetches your Reddit posts and/or comments, allows filtering by subreddit and minimum score, and exports the data in CSV format.
+RedditAccess is a command-line application that fetches your Reddit posts and/or comments, allows filtering by subreddit and score range, and exports the data in CSV format.
 
 ## Setup
 
@@ -55,8 +55,12 @@ RedditAccess is a command-line application that fetches your Reddit posts and/or
 
 RedditAccess accepts the following command-line options:
 
-*   `-s, --subreddit <SUBREDDIT>`: Optional. Filter results by a specific subreddit name (e.g., `rust`). If not provided, items from all subreddits will be fetched.
-*   `-m, --min_score <MIN_SCORE>`: Optional. Filter results to include only items with at least this many upvotes. If not provided, all items are included regardless of score.
+*   `-s, --subreddit <SUBREDDIT>`: Optional. Filter results by specific subreddit name(s). Accepts comma-separated list (e.g., `rust,programming,coding`). If not provided, items from all subreddits will be fetched.
+*   `-x, --exclude-subreddit <SUBREDDIT>`: Optional. Exclude results from specific subreddit name(s). Accepts comma-separated list (e.g., `spam,test,offtopic`). Can be combined with `--subreddit`.
+*   `-m, --min-score <MIN_SCORE>`: Optional. Filter results to include only items with at least this many upvotes. If not provided, all items are included regardless of score.
+*   `-M, --max-score <MAX_SCORE>`: Optional. Filter results to exclude items with scores at or above this threshold (i.e., keep only items with scores below this value). Can be negative. If not provided, no upper score limit is applied.
+*   `--min-age <AGE>`: Optional. Filter results to include only items older than the specified age. Accepts human-readable durations (e.g., `1 week`, `2 years`, `30 days`) or specific dates (e.g., `2024-01-15`, `2024-01-15T10:30:00`). If not provided, no minimum age limit is applied.
+*   `--max-age <AGE>`: Optional. Filter results to include only items newer than the specified age. Accepts human-readable durations (e.g., `1 week`, `2 years`, `30 days`) or specific dates (e.g., `2024-01-15`, `2024-01-15T10:30:00`). If not provided, no maximum age limit is applied.
 *   `-t, --item-type <ITEM_TYPE>`: Optional. Specify the type of items to fetch. Valid values are:
     *   `posts`: Fetch only submitted posts.
     *   `comments`: Fetch only comments.
@@ -90,6 +94,22 @@ The application outputs data in CSV format to standard output. The CSV header is
     ```bash
     ./target/debug/reddit-access -s rust -m 10
     ```
+*   Fetch posts and comments from multiple subreddits:
+    ```bash
+    ./target/debug/reddit-access -s rust,programming,coding
+    ```
+*   Exclude posts and comments from specific subreddits:
+    ```bash
+    ./target/debug/reddit-access -x spam,test,offtopic
+    ```
+*   Combine include and exclude filters (fetch from rust and programming, but exclude rust_gaming):
+    ```bash
+    ./target/debug/reddit-access -s rust,programming -x rust_gaming
+    ```
+*   Fetch posts and comments with scores between 5 and 100 (inclusive of 5, exclusive of 100):
+    ```bash
+    ./target/debug/reddit-access -m 5 -M 100
+    ```
 *   Fetch only your comments from all subreddits:
     ```bash
     ./target/debug/reddit-access --item-type comments
@@ -104,6 +124,26 @@ The application outputs data in CSV format to standard output. The CSV header is
 *   Fetch all your comments and delete them without prompting for confirmation:
     ```bash
     ./target/debug/reddit-access --item-type comments --delete -y
+    ```
+*   Fetch posts older than 1 year:
+    ```bash
+    ./target/debug/reddit-access --item-type posts --min-age "1 year"
+    ```
+*   Fetch comments from the last 30 days:
+    ```bash
+    ./target/debug/reddit-access --item-type comments --max-age "30 days"
+    ```
+*   Fetch posts between 6 months and 1 year old:
+    ```bash
+    ./target/debug/reddit-access --item-type posts --min-age "1 year" --max-age "6 months"
+    ```
+*   Fetch posts created after a specific date:
+    ```bash
+    ./target/debug/reddit-access --item-type posts --max-age "2024-01-15"
+    ```
+*   Fetch posts created before a specific date:
+    ```bash
+    ./target/debug/reddit-access --item-type posts --min-age "2024-06-01"
     ```
 
 ## License
