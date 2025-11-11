@@ -36,6 +36,7 @@ pub async fn fetch_user_items(
     filter_max_score: Option<i32>,
     min_age_timestamp: Option<f64>,
     max_age_timestamp: Option<f64>,
+    filter_post_title: Option<&String>,
     debug_mode: bool,
 ) -> Result<Vec<UnifiedItem>, Box<dyn Error>> {
     let mut all_items: Vec<UnifiedItem> = Vec::new();
@@ -242,7 +243,14 @@ pub async fn fetch_user_items(
                         comment.data.created_utc.map_or(true, |created| created >= max_ts)
                     });
                     
-                    include_match && exclude_match && score_match && max_score_match && older_than_match && newer_than_match
+                    // Post title filtering for comments (case-insensitive substring match)
+                    let post_title_match = filter_post_title.as_ref().map_or(true, |filter_title| {
+                        comment.data.link_title.as_ref().map_or(false, |link_title| {
+                            link_title.to_lowercase().contains(&filter_title.to_lowercase())
+                        })
+                    });
+                    
+                    include_match && exclude_match && score_match && max_score_match && older_than_match && newer_than_match && post_title_match
                 })
                 .collect();
             

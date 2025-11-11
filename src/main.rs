@@ -112,6 +112,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         cli.max_score,
         min_age_timestamp,
         max_age_timestamp,
+        cli.post_title.as_ref(),
         cli.debug,
     )
     .await?;

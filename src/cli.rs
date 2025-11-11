@@ -38,4 +38,7 @@ pub struct Cli {
 
     #[clap(long, value_parser, help = "Maximum age of items (e.g., '1 week', '2 years', or '2024-01-15')")]
     pub max_age: Option<String>,
+
+    #[clap(short = 'p', long, value_parser, help = "Filter comments by post title (case-insensitive substring match)")]
+    pub post_title: Option<String>,
 }
