@@ -81,9 +81,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Sort all items by creation date (newest first)
     all_items.sort_by(|a, b| b.created_utc.partial_cmp(&a.created_utc).unwrap_or(std::cmp::Ordering::Equal));
 
+    // If overwrite is requested, perform it first. If delete is also requested, proceed to deletion next.
     if let Some(overwrite_text) = &cli.overwrite {
         handle_overwrite_action(&reddit, &mut all_items, overwrite_text, cli.debug).await?;
-    } else if cli.delete {
+    }
+
+    if cli.delete {
         let _deleted_items_count = handle_delete_action(&reddit, &all_items, cli.yes, cli.debug).await?;
         // The function now prints its own summary.
     } else if let Some(csv_file_path) = &cli.csv {
