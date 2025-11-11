@@ -222,23 +222,27 @@ pub async fn fetch_user_items(
                     
                     // Check if subreddit is NOT in exclude list (if specified)
                     let exclude_match = exclude_subreddits.as_ref().map_or(true, |list| {
-                        comment_subreddit.as_ref().map_or(true, |cs| {
+                        comment_subreddit.as_ref().map_or(false, |cs| {
                             !list.iter().any(|sr| sr == cs)
                         })
                     });
                     
-                    let score_match = filter_score.map_or(true, |s_filter| comment.data.score.map_or(false, |s_comment| s_comment >= s_filter));
-                    let max_score_match = filter_max_score.map_or(true, |s_filter| comment.data.score.map_or(false, |s_comment| s_comment < s_filter));
-                    
-                    // Age filtering for comments
-                    let min_age_match = min_age_timestamp.map_or(true, |min_ts| {
-                        comment.data.created_utc.map_or(false, |created| created <= min_ts)
+                    let score_match = filter_score.map_or(true, |s_filter| {
+                        comment.data.score.map_or(true, |s_comment| s_comment >= s_filter)
                     });
-                    let max_age_match = max_age_timestamp.map_or(true, |max_ts| {
-                        comment.data.created_utc.map_or(false, |created| created >= max_ts)
+                    let max_score_match = filter_max_score.map_or(true, |s_filter| {
+                        comment.data.score.map_or(true, |s_comment| s_comment < s_filter)
                     });
                     
-                    include_match && exclude_match && score_match && max_score_match && min_age_match && max_age_match
+                    // Age filtering for comments (min_age => older than threshold, max_age => newer than threshold)
+                    let older_than_match = min_age_timestamp.map_or(true, |min_ts| {
+                        comment.data.created_utc.map_or(true, |created| created <= min_ts)
+                    });
+                    let newer_than_match = max_age_timestamp.map_or(true, |max_ts| {
+                        comment.data.created_utc.map_or(true, |created| created >= max_ts)
+                    });
+                    
+                    include_match && exclude_match && score_match && max_score_match && older_than_match && newer_than_match
                 })
                 .collect();
             
