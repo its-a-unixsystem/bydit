@@ -1,8 +1,8 @@
 pkgname=bydit
 _pkgname=bydit
 _project=bydit
-_commit=9c106ddd4c7d90711c0254e4d33a49451e34a563
-pkgver=1.0.0
+_commit="v${pkgver}"
+pkgver=1.0.1
 pkgrel=1
 pkgdesc="CLI exporter for Reddit posts and comments with filtering and CSV output"
 arch=('x86_64')
@@ -11,7 +11,7 @@ license=('MIT')
 depends=('openssl')
 makedepends=('cargo' 'git')
 provides=("bydit=$pkgver")
-source=("git+https://github.com/its-a-unixsystem/bydit.git#commit=${_commit}")
+source=("git+https://github.com/its-a-unixsystem/bydit.git#tag=${_commit}")
 sha256sums=('SKIP')
 
 prepare() {

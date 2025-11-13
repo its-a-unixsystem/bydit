@@ -7,13 +7,13 @@ export CARGO_TARGET_DIR = $(CURDIR)/target/debian
 	dh $@
 
 override_dh_auto_configure:
-	cd $(CURDIR)/.. && cargo fetch --locked
+	cd $(CURDIR)/../.. && cargo fetch --locked
 
 override_dh_auto_build:
-	cd $(CURDIR)/.. && cargo build --release --locked
+	cd $(CURDIR)/../.. && cargo build --release --locked
 
 override_dh_auto_test:
-	cd $(CURDIR)/.. && cargo test --locked
+	cd $(CURDIR)/../.. && cargo test --locked
 
 override_dh_auto_install:
 	install -Dm0755 target/debian/release/bydit debian/bydit/usr/bin/bydit

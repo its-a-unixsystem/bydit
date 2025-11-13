@@ -1,5 +1,5 @@
 Name:           bydit
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Summary:        CLI exporter for Reddit posts and comments with filtering and CSV output
 
@@ -39,5 +39,8 @@ install -Dm0644 README.md %{buildroot}%{_docdir}/%{name}/README.md
 %{_bindir}/bydit
 
 %changelog
+* Thu Nov 13 2025 Thomas <thomas@februus.net> - 1.0.1-1
+- New upstream release 1.0.1
+
 * Thu Nov 13 2025 Thomas <thomas@februus.net> - 1.0.0-1
 - Initial RPM packaging for bydit

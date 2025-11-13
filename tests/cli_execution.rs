@@ -18,7 +18,10 @@ fn test_run_without_args_shows_help() -> Result<(), Box<dyn std::error::Error>> 
     cmd.current_dir(temp_dir.path())
         .assert()
         .failure()
-        .stderr(predicate::str::contains("config.toml").and(predicate::str::contains("No such file or directory"))); // Expect specific config file not found error
+        .stderr(
+            predicate::str::contains("Failed to locate config file 'config.toml'")
+                .and(predicate::str::contains(".config/bydit/config.toml")),
+        ); // Expect specific config search failure message
     temp_dir.close()?;
     Ok(())
 }
