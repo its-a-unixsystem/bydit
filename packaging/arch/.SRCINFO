@@ -1,0 +1,15 @@
+pkgbase = bydit
+	pkgdesc = CLI exporter for Reddit posts and comments with filtering and CSV output
+	pkgver = 1.0.0
+	pkgrel = 1
+	url = https://github.com/its-a-unixsystem/bydit
+	arch = x86_64
+	license = MIT
+	makedepends = cargo
+	makedepends = git
+	depends = openssl
+	provides = bydit=1.0.0
+	source = git+https://github.com/its-a-unixsystem/bydit.git#commit=6f32dc86e02b44c3b663722d42971de25715d11e
+	sha256sums = SKIP
+
+pkgname = bydit

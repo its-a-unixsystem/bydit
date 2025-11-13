@@ -1,0 +1,40 @@
+pkgname=bydit
+_pkgname=bydit
+_project=bydit
+_commit=6f32dc86e02b44c3b663722d42971de25715d11e
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="CLI exporter for Reddit posts and comments with filtering and CSV output"
+arch=('x86_64')
+url="https://github.com/its-a-unixsystem/bydit"
+license=('MIT')
+depends=('openssl')
+makedepends=('cargo' 'git')
+provides=("bydit=$pkgver")
+source=("git+https://github.com/its-a-unixsystem/bydit.git#commit=${_commit}")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir/${_project}"
+  export CARGO_TARGET_DIR="$srcdir/cargo-target"
+  cargo fetch
+}
+
+build() {
+  cd "$srcdir/${_project}"
+  export CARGO_TARGET_DIR="$srcdir/cargo-target"
+  cargo build --release
+}
+
+check() {
+  cd "$srcdir/${_project}"
+  export CARGO_TARGET_DIR="$srcdir/cargo-target"
+  cargo test
+}
+
+package() {
+  cd "$srcdir/${_project}"
+  local cargo_target="$srcdir/cargo-target"
+  install -Dm755 "$cargo_target/release/${_pkgname}" "$pkgdir/usr/bin/${_pkgname}"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/${_pkgname}/README.md"
+}
