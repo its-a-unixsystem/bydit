@@ -8,7 +8,7 @@ fn test_help_message() {
     cmd.arg("--help")
         .assert()
         .success()
-        .stdout(predicate::str::contains("Usage: reddit-access [OPTIONS]"));
+        .stdout(predicate::str::contains("Usage: bydit [OPTIONS]"));
 }
 
 #[test]

@@ -1,6 +1,6 @@
-# RedditAccess - Reddit Data Exporter
+# Bydit - Reddit Data Exporter
 
-RedditAccess is a command-line application that fetches your Reddit posts and/or comments, allows filtering by subreddit and score range, and exports the data in CSV format.
+Bydit is a command-line application that fetches your Reddit posts and/or comments, allows filtering by subreddit and score range, and exports the data in CSV format.
 
 ## Setup
 
@@ -9,26 +9,26 @@ RedditAccess is a command-line application that fetches your Reddit posts and/or
     *   Go to [Reddit's app preferences](https://www.reddit.com/prefs/apps).
     *   Click "are you a developer? create an app..."
     *   Fill in the details:
-        *   **name:** (e.g., `RedditAccessApp`)
+        *   **name:** (e.g., `ByditApp`)
         *   **type:** select `script`
         *   **description:** (e.g., `App to export my Reddit data`)
         *   **about url:** (can be blank or your profile URL)
-        *   **redirect uri:** (e.g., `http://localhost:8080` - this won't be actively used by RedditAccess but is required by Reddit)
+        *   **redirect uri:** (e.g., `http://localhost:8080` - this won't be actively used by Bydit but is required by Reddit)
     *   Click "create app".
     *   Note down the **client ID** (shown under your app's name) and the **client secret**.
-3.  **Configure RedditAccess:**
-    *   In the root directory of the RedditAccess project, create a file named `config.toml`.
+3.  **Configure Bydit:**
+    *   In the root directory of the Bydit project, create a file named `config.toml`.
     *   Add your Reddit API credentials and login information to `config.toml`:
 
         ```toml
-        user_agent = "YOUR_CUSTOM_USER_AGENT_STRING"  # e.g., RedditAccessApp/0.1 by YourUsername
+        user_agent = "YOUR_CUSTOM_USER_AGENT_STRING"  # e.g., ByditApp/1.0 by YourUsername
         client_id = "YOUR_REDDIT_APP_CLIENT_ID"      # Found in your Reddit app settings
         client_secret = "YOUR_REDDIT_APP_CLIENT_SECRET"# Found in your Reddit app settings
         username = "YOUR_REDDIT_USERNAME"
         password = "YOUR_REDDIT_PASSWORD"
         ```
 
-        **Important:** Replace the placeholder values with your actual credentials. The `user_agent` should be a unique string that describes your script, including your username if possible (e.g., `RedditAccess/1.0 by u/YourUsername`).
+        **Important:** Replace the placeholder values with your actual credentials. The `user_agent` should be a unique string that describes your script, including your username if possible (e.g., `Bydit/1.0 by u/YourUsername`).
 
 ## Building and Running
 
@@ -43,17 +43,17 @@ RedditAccess is a command-line application that fetches your Reddit posts and/or
     ```
     Or, after building, run the executable directly:
     ```bash
-    ./target/debug/reddit-access [OPTIONS]
+    ./target/debug/bydit [OPTIONS]
     ```
     For a release build (optimized):
     ```bash
     cargo build --release
-    ./target/release/reddit-access [OPTIONS]
+    ./target/release/bydit [OPTIONS]
     ```
 
 ## Command-Line Options
 
-RedditAccess accepts the following command-line options:
+Bydit accepts the following command-line options:
 
 *   `-s, --subreddit <SUBREDDIT>`: Optional. Filter results by specific subreddit name(s). Accepts comma-separated list (e.g., `rust,programming,coding`). If not provided, items from all subreddits will be fetched.
 *   `-x, --exclude-subreddit <SUBREDDIT>`: Optional. Exclude results from specific subreddit name(s). Accepts comma-separated list (e.g., `spam,test,offtopic`). Can be combined with `--subreddit`.
@@ -95,95 +95,102 @@ The application outputs data in CSV format to standard output. The CSV header is
 
 Fetch all posts and comments from the `rust` subreddit with a minimum score of 10:
 ```bash
-reddit-access -s rust -m 10
+bydit -s rust -m 10
 ```
 
 Fetch posts and comments from multiple subreddits:
 ```bash
-reddit-access -s rust,programming,coding
+bydit -s rust,programming,coding
 ```
 
 Exclude posts and comments from specific subreddits:
 ```bash
-reddit-access -x spam,test,offtopic
+bydit -x spam,test,offtopic
 ```
 
 Combine include and exclude filters (fetch from rust and programming, but exclude rust_gaming):
 ```bash
-reddit-access -s rust,programming -x rust_gaming
+bydit -s rust,programming -x rust_gaming
 ```
 
 ### Filtering by Score
 
 Fetch posts and comments with scores between 5 and 100 (inclusive of 5, exclusive of 100):
 ```bash
-reddit-access -m 5 -M 100
+bydit -m 5 -M 100
 ```
 
 ### Filtering by Item Type
 
 Fetch only your comments from all subreddits:
 ```bash
-reddit-access --item-type comments
+bydit --item-type comments
 ```
 
 ### Filtering by Age
 
 Fetch posts older than 1 year:
 ```bash
-reddit-access --item-type posts --min-age "1 year"
+bydit --item-type posts --min-age "1 year"
 ```
 
 Fetch comments from the last 30 days:
 ```bash
-reddit-access --item-type comments --max-age "30 days"
+bydit --item-type comments --max-age "30 days"
 ```
 
 Fetch posts between 6 months and 1 year old:
 ```bash
-reddit-access --item-type posts --min-age "1 year" --max-age "6 months"
+bydit --item-type posts --min-age "1 year" --max-age "6 months"
 ```
 
 Fetch posts created after a specific date:
 ```bash
-reddit-access --item-type posts --max-age "2024-01-15"
+bydit --item-type posts --max-age "2024-01-15"
 ```
 
 Fetch posts created before a specific date:
 ```bash
-reddit-access --item-type posts --min-age "2024-06-01"
+bydit --item-type posts --min-age "2024-06-01"
 ```
 
 ### Filtering by Post Title
 
 Fetch comments on posts with "[deleted by user]" in the title:
 ```bash
-reddit-access --item-type comments --post-title "[deleted by user]"
+bydit --item-type comments --post-title "[deleted by user]"
 ```
 
 ### Exporting Data
 
 Fetch all your posts and comments and save to a file:
 ```bash
-reddit-access > my_reddit_data.csv
+bydit > my_reddit_data.csv
 ```
 
 ### Modifying and Deleting Content
 
 Fetch posts from `r/test` and overwrite their content, then delete them:
 ```bash
-reddit-access -s test --item-type posts --overwrite "This content has been updated." --delete
+bydit -s test --item-type posts --overwrite "This content has been updated." --delete
 ```
 
 Fetch all your comments and delete them without prompting for confirmation:
 ```bash
-reddit-access --item-type comments --delete -y
+bydit --item-type comments --delete -y
 ```
 
 Fetch and delete comments on deleted posts:
 ```bash
-reddit-access --item-type comments -p "[deleted by user]" --delete
+bydit --item-type comments -p "[deleted by user]" --delete
 ```
+
+## Arch Package Build
+
+- **Install prerequisites**: `sudo pacman -S --needed base-devel git rust` ensures the system has the Arch packaging toolchain and Rust compiler.
+- **Build and install**: Run `cd packaging/arch && makepkg -si` from the repo root to create and install the `bydit` binary via the `PKGBUILD` recipe.
+- **Configuration**: Keep `config.toml` alongside your working directory so `/usr/bin/bydit` can load your Reddit credentials after installation.
+- **Installed files**: The package places the executable in `/usr/bin/bydit` and documentation in `/usr/share/doc/bydit/README.md`. Publish `PKGBUILD` and `.SRCINFO` unchanged if submitting to the AUR.
 
 ## License
 

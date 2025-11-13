@@ -1,6 +1,6 @@
 # TODO & Feature Implementation Tracking
 
-This document tracks ongoing tasks, future enhancements, and implementation plans for the `reddit-access` project.
+This document tracks ongoing tasks, future enhancements, and implementation plans for the `bydit` project.
 
 ## Completed Tasks
 

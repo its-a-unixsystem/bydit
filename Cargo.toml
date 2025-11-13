@@ -1,6 +1,6 @@
 [package]
-name = "reddit-access"
-version = "0.1.0"
+name = "bydit"
+version = "1.0.0"
 edition = "2021"
 
 [dev-dependencies]
