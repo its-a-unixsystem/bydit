@@ -30,6 +30,18 @@ Bydit is a command-line application that fetches your Reddit posts and/or commen
 
         **Important:** Replace the placeholder values with your actual credentials. The `user_agent` should be a unique string that describes your script, including your username if possible (e.g., `Bydit/1.0 by u/YourUsername`).
 
+### Configuration file locations
+
+Bydit searches for `config.toml` in this order:
+
+- Current directory: `./config.toml`
+- XDG config: `$XDG_CONFIG_HOME/bydit/config.toml` or `~/.config/bydit/config.toml`
+- XDG data: `$XDG_DATA_HOME/bydit/config.toml` or `~/.local/share/bydit/config.toml`
+
+When installed as `/usr/bin/bydit`, place your `config.toml` in either your working directory, `~/.config/bydit/`, or `~/.local/share/bydit/`.
+
+Enable `--debug` to print the resolved path when a config is found, or the list of searched paths if not found.
+
 ## Building and Running
 
 1.  Navigate to the project's root directory in your terminal.
@@ -189,7 +201,7 @@ bydit --item-type comments -p "[deleted by user]" --delete
 
 - **Install prerequisites**: `sudo pacman -S --needed base-devel git rust` ensures the system has the Arch packaging toolchain and Rust compiler.
 - **Build and install**: Run `cd packaging/arch && makepkg -si` from the repo root to create and install the `bydit` binary via the `PKGBUILD` recipe.
-- **Configuration**: Keep `config.toml` alongside your working directory so `/usr/bin/bydit` can load your Reddit credentials after installation.
+- **Configuration**: Place `config.toml` in your working directory, or under `~/.config/bydit/` or `~/.local/share/bydit/`, so `/usr/bin/bydit` can load your Reddit credentials after installation.
 - **Installed files**: The package places the executable in `/usr/bin/bydit` and documentation in `/usr/share/doc/bydit/README.md`. Publish `PKGBUILD` and `.SRCINFO` unchanged if submitting to the AUR.
 
 ## Debian Package Build
@@ -197,14 +209,14 @@ bydit --item-type comments -p "[deleted by user]" --delete
 - **Install prerequisites**: `sudo apt install --no-install-recommends build-essential debhelper cargo rustc pkg-config libssl-dev` provides dpkg tooling, Rust, and OpenSSL headers.
 - **Build**: `cd packaging/deb && dpkg-buildpackage -us -uc` fetches crates, compiles `bydit`, runs the smoke tests, and emits `../bydit_1.0.1-1_amd64.deb`.
 - **Install**: `sudo dpkg -i ../bydit_1.0.1-1_amd64.deb` places `/usr/bin/bydit` and `/usr/share/doc/bydit/README.md` onto the system.
-- **Configuration**: Copy `config.toml` next to the directory where you plan to run `/usr/bin/bydit`.
+- **Configuration**: Place `config.toml` in your working directory, or under `~/.config/bydit/` or `~/.local/share/bydit/`, for `/usr/bin/bydit` to locate it.
 
 ## RPM Package Build
 
 - **Install prerequisites**: `sudo dnf install rpmdevtools rust cargo rust-packaging pkgconf-pkg-config openssl-devel` sets up the Fedora/RHEL toolchain plus OpenSSL headers.
 - **Stage sources**: Run `rpmdev-setuptree` once, then `git archive --format=tar.gz --output=$HOME/rpmbuild/SOURCES/bydit-1.0.1.tar.gz --prefix=bydit-1.0.1/ HEAD` from the repo root so the tarball referenced by `packaging/rpm/bydit.spec` exists.
 - **Build**: Execute `rpmbuild -ba packaging/rpm/bydit.spec` to compile, test, and create the RPMs under `~/rpmbuild/{RPMS,SRPMS}`.
-- **Install**: `sudo dnf install ~/rpmbuild/RPMS/x86_64/bydit-1.0.1-1*.rpm` installs `/usr/bin/bydit` plus `/usr/share/doc/bydit/README.md`. Keep `config.toml` alongside your working directory for Reddit authentication.
+- **Install**: `sudo dnf install ~/rpmbuild/RPMS/x86_64/bydit-1.0.1-1*.rpm` installs `/usr/bin/bydit` plus `/usr/share/doc/bydit/README.md`. Place `config.toml` in your working directory, or under `~/.config/bydit/` or `~/.local/share/bydit/`, for Reddit authentication.
 
 ## License
 
