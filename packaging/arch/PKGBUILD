@@ -1,9 +1,9 @@
 pkgname=bydit
 _pkgname=bydit
 _project=bydit
-_commit="v${pkgver}"
 pkgver=1.0.1
 pkgrel=1
+_commit="v${pkgver}"
 pkgdesc="CLI exporter for Reddit posts and comments with filtering and CSV output"
 arch=('x86_64')
 url="https://github.com/its-a-unixsystem/bydit"
