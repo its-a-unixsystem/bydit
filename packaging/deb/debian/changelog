@@ -1,0 +1,5 @@
+bydit (1.0.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging for bydit.
+
+ -- Thomas <thomas@februus.net>  Thu, 13 Nov 2025 11:23:00 +0100

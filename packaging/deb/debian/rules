@@ -1,0 +1,19 @@
+#!/usr/bin/make -f
+
+export CARGO_HOME = $(CURDIR)/debian/cargo_home
+export CARGO_TARGET_DIR = $(CURDIR)/target/debian
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	cargo fetch --locked
+
+override_dh_auto_build:
+	cargo build --release --locked
+
+override_dh_auto_test:
+	cargo test --locked
+
+override_dh_auto_install:
+	install -Dm0755 target/debian/release/bydit debian/bydit/usr/bin/bydit

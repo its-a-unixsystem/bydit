@@ -9,7 +9,7 @@ pkgbase = bydit
 	makedepends = git
 	depends = openssl
 	provides = bydit=1.0.0
-	source = git+https://github.com/its-a-unixsystem/bydit.git#commit=6f32dc86e02b44c3b663722d42971de25715d11e
+	source = git+https://github.com/its-a-unixsystem/bydit.git#commit=9c106ddd4c7d90711c0254e4d33a49451e34a563
 	sha256sums = SKIP
 
 pkgname = bydit

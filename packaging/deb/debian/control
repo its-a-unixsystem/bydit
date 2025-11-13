@@ -1,0 +1,17 @@
+Source: bydit
+Section: utils
+Priority: optional
+Maintainer: Thomas <thomas@februus.net>
+Build-Depends: debhelper-compat (= 13), cargo, rustc, pkg-config, libssl-dev
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://github.com/its-a-unixsystem/bydit
+Vcs-Git: https://github.com/its-a-unixsystem/bydit.git
+Vcs-Browser: https://github.com/its-a-unixsystem/bydit
+
+Package: bydit
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: CLI exporter for Reddit posts and comments with filtering and CSV output
+ Bydit authenticates against Reddit and lets you filter, export, overwrite,
+ or delete posts and comments directly from the command line.

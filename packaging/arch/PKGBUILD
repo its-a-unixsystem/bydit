@@ -1,7 +1,7 @@
 pkgname=bydit
 _pkgname=bydit
 _project=bydit
-_commit=6f32dc86e02b44c3b663722d42971de25715d11e
+_commit=9c106ddd4c7d90711c0254e4d33a49451e34a563
 pkgver=1.0.0
 pkgrel=1
 pkgdesc="CLI exporter for Reddit posts and comments with filtering and CSV output"
